@@ -6,14 +6,20 @@ from pathlib import Path
 import argparse
 import subprocess
 
-from _common import REPOSITORY_ROOT, find_ffmpeg, python_environment, venv_python
+from _common import (
+    DEFAULT_TABLES,
+    REPOSITORY_ROOT,
+    find_ffmpeg,
+    python_environment,
+    venv_python,
+)
 
 
-def run(command: list[str]) -> None:
+def run(command: list[str], tables: Path) -> None:
     subprocess.run(
         command,
         cwd=REPOSITORY_ROOT,
-        env=python_environment(),
+        env=python_environment(tables),
         check=True,
     )
 
@@ -22,8 +28,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--unit-only", action="store_true")
     parser.add_argument("--sample-dir", type=Path)
+    parser.add_argument("--tables", type=Path, default=DEFAULT_TABLES)
     parser.add_argument("--ffmpeg", help="FFmpeg executable name or path")
     args = parser.parse_args()
+
+    tables = args.tables.expanduser().resolve()
+    if not tables.is_file():
+        parser.error(
+            f"decoder tables were not found at {tables}; run "
+            "python scripts/generate_arib_tables.py PATH_TO_FASCICLE_2_PDF"
+        )
 
     python = venv_python()
     print("Running media-independent decoder tests...", flush=True)
@@ -38,7 +52,8 @@ def main() -> None:
             "-p",
             "test_*.py",
             "-v",
-        ]
+        ],
+        tables,
     )
     if args.unit_only:
         print("Unit tests passed.", flush=True)
@@ -63,7 +78,10 @@ def main() -> None:
     integration_test = REPOSITORY_ROOT / "tests" / "asf_integration.py"
     for index, sample in enumerate(samples, 1):
         print(f"Running ASF integration sample {index}/{len(samples)}...", flush=True)
-        run([str(python), str(integration_test), str(sample), "--ffmpeg", ffmpeg])
+        run(
+            [str(python), str(integration_test), str(sample), "--ffmpeg", ffmpeg],
+            tables,
+        )
 
     print(
         f"All tests passed, including {len(samples)} ASF integration samples.",

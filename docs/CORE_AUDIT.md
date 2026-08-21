@@ -45,7 +45,7 @@ The old implementation happened to give the same selected PSI samples for the te
 
 The decimal CFCB values in Table 5.2.1.8-1 uniquely recover values on a Q15 grid: every printed value is within `0.0000005` of an integer divided by 32768. The CSCB values in Table 5.2.1.8-2 similarly recover exactly to a Q7 grid, integer divided by 128.
 
-The v3 table file therefore stores:
+The local table generator therefore reconstructs:
 
 - CFCB as exact multiples of `1 / 32768`;
 - CSCB0 and CSCB1 as exact multiples of `1 / 128`.
@@ -57,7 +57,7 @@ This removes decimal-publication rounding from the excitation vectors. Its numer
 Run:
 
 ```console
-python core_self_test.py
+python scripts/test.py --unit-only
 ```
 
 The test covers:
@@ -70,10 +70,11 @@ The test covers:
 - extraction, CRC and complete decoding of Phone Pictures 130–134;
 - 158 CRC-valid speech frames and a 6.400-second WAV for every clip.
 
-Current table SHA-256:
+Current canonical numerical table SHA-256 (independent of NPZ container
+metadata):
 
 ```text
-8a4e39db686f6de86375fc5f735001ea89b54c4736c65dabf9adfe624b5a442f
+bb92c04f5756092124d4cfea770d304bbef0249a65e3164a61f6f1f32ba244c0
 ```
 
 ## Numerical change from baseline v2
@@ -87,8 +88,8 @@ Full per-clip figures are in `core-audit-statistics.json` in the listening-outpu
 Peak normalisation is not part of the speech decoder. The command-line tool retains normalised WAV output by default for convenient listening, but now supports:
 
 ```console
-python decode_sony_asf.py sample.asf native.wav --no-normalize \
-    --float-npy synthesis.npy
+python scripts/convert_mova_pdc_audio.py sample.asf --wav native.wav \
+    --no-normalize --float-npy synthesis.npy
 ```
 
 - `--no-normalize` writes the decoder's native amplitude with ordinary signed-16-bit saturation.

@@ -9,6 +9,8 @@ import sys
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+MEDIA_ROOT = REPOSITORY_ROOT.parent / "pdc-audio-media"
+DEFAULT_TABLES = MEDIA_ROOT / "generated" / "arib_std27_tables.npz"
 
 
 def venv_python(*, required: bool = False) -> Path:
@@ -24,13 +26,15 @@ def venv_python(*, required: bool = False) -> Path:
     return Path(sys.executable)
 
 
-def python_environment() -> dict[str, str]:
+def python_environment(tables: Path | None = None) -> dict[str, str]:
     environment = os.environ.copy()
     source_root = str(REPOSITORY_ROOT / "src")
     existing = environment.get("PYTHONPATH")
     environment["PYTHONPATH"] = (
         source_root + os.pathsep + existing if existing else source_root
     )
+    if tables is not None:
+        environment["PDC_AUDIO_TABLES"] = str(tables)
     return environment
 
 

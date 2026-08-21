@@ -205,6 +205,13 @@ def main() -> None:
     parser.add_argument("--no-normalize", action="store_true", help="do not peak-normalize output")
     args = parser.parse_args()
 
+    args.tables = args.tables.expanduser().resolve()
+    if not args.tables.is_file():
+        parser.error(
+            f"decoder tables were not found at {args.tables}; generate them "
+            "locally from the official ARIB PDF or pass --tables"
+        )
+
     records = load_records(args.input, active_only=not args.include_trailer)
     frames: list[PDCFrameParameters] = []
     report: list[dict[str, object]] = []

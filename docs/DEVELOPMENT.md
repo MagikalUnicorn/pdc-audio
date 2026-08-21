@@ -6,14 +6,17 @@ checks and privacy rules used while changing the project.
 
 ## Local data and privacy
 
-Keep standards, source recordings, and generated output in the sibling
-`pdc-audio-media` directory. Never commit recordings, extracted pictures,
-handset metadata, absolute home paths, media-derived logs, or generated output.
-The helpers read external samples without copying them into the repository.
+Keep standards, locally generated decoder tables, source recordings, and
+generated output in the sibling `pdc-audio-media` directory. Never commit
+standards-derived tables, recordings, extracted pictures, handset metadata,
+absolute home paths, media-derived logs, or generated output. The helpers read
+external resources without copying them into the repository.
 
 ## Routine verification
 
-From the repository root, build the package and run all available tests:
+Generate the decoder tables once from the supported official PDF as documented
+in the [README](../README.md#generate-the-decoder-tables-locally). Then, from
+the repository root, build the package and run all available tests:
 
 ```console
 python scripts/build.py
@@ -36,7 +39,7 @@ storing either path in the repository:
 
 ```console
 python scripts/test.py --sample-dir /private/samples \
-    --ffmpeg /tools/ffmpeg
+    --ffmpeg /tools/ffmpeg --tables /private/generated/tables.npz
 ```
 
 Each integration runs in a temporary directory. It checks the frame CRCs,

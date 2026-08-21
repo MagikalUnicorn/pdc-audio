@@ -25,6 +25,7 @@ dist/
 *.mov
 *.mp4
 *.npy
+arib_std27_tables.npz
 *.pdf
 *.png
 *.wav

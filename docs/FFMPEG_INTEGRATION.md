@@ -138,7 +138,8 @@ A separate later series could add ASF binary-metadata preservation.
 
 - no official bit-exact vector yet;
 - unspecified reset/fixed-point details in the available public text;
-- provenance and licensing review for the large numerical codebook tables;
+- each user must generate the numerical codebook tables locally from the
+  supported official standard PDF;
 - only five files from one handset model currently tested;
 - the Sony trailer semantics remain empirical;
 - FATE sample redistribution permission would be needed.

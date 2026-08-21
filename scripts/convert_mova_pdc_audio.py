@@ -7,7 +7,13 @@ from pathlib import Path
 import argparse
 import subprocess
 
-from _common import REPOSITORY_ROOT, find_ffmpeg, python_environment, venv_python
+from _common import (
+    DEFAULT_TABLES,
+    REPOSITORY_ROOT,
+    find_ffmpeg,
+    python_environment,
+    venv_python,
+)
 
 
 def main() -> None:
@@ -18,6 +24,7 @@ def main() -> None:
     parser.add_argument("--json", type=Path, help="decoded parameter output")
     parser.add_argument("--float-npy", type=Path, help="float64 synthesis output")
     parser.add_argument("--mp4", type=Path, help="H.264/AAC listening output")
+    parser.add_argument("--tables", type=Path, default=DEFAULT_TABLES)
     parser.add_argument("--ffmpeg", help="FFmpeg executable name or path")
     parser.add_argument("--no-normalize", action="store_true")
     parser.add_argument("--no-verify", action="store_true")
@@ -27,6 +34,12 @@ def main() -> None:
     input_asf = args.input.expanduser().resolve()
     if not input_asf.is_file():
         parser.error("the input ASF does not exist")
+    tables = args.tables.expanduser().resolve()
+    if not tables.is_file():
+        parser.error(
+            f"decoder tables were not found at {tables}; run "
+            "python scripts/generate_arib_tables.py PATH_TO_FASCICLE_2_PDF"
+        )
 
     outputs = {
         "--asf": args.asf,
@@ -43,6 +56,7 @@ def main() -> None:
 
     needs_ffmpeg = outputs["--asf"] is not None or outputs["--mp4"] is not None
     command = [str(venv_python()), "-m", "pdc_audio", str(input_asf)]
+    command.extend(["--tables", str(tables)])
     if needs_ffmpeg:
         command.extend(["--ffmpeg", find_ffmpeg(args.ffmpeg)])
     for option, path in outputs.items():
@@ -58,7 +72,7 @@ def main() -> None:
     subprocess.run(
         command,
         cwd=REPOSITORY_ROOT,
-        env=python_environment(),
+        env=python_environment(tables),
         check=True,
     )
 

@@ -26,6 +26,33 @@ from pdc_audio.pdc_decoder import (
 from pdc_audio.semc_pdc_records import strip_terminal_records
 
 
+TABLE_ORDER = (
+    "clspl",
+    "clsph",
+    "clspm1",
+    "clspm2",
+    "cpow",
+    "cfcb",
+    "cscb0",
+    "cscb1",
+    "cgain",
+)
+EXPECTED_TABLE_DIGEST = (
+    "bb92c04f5756092124d4cfea770d304bbef0249a65e3164a61f6f1f32ba244c0"
+)
+
+
+def table_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with np.load(path) as tables:
+        if tuple(tables.files) != TABLE_ORDER:
+            raise AssertionError(f"unexpected decoder table keys: {tables.files}")
+        for name in TABLE_ORDER:
+            digest.update(name.encode("ascii") + b"\0")
+            digest.update(np.asarray(tables[name], dtype="<f8").tobytes())
+    return digest.hexdigest()
+
+
 def legal_lagf(lagi: int) -> tuple[int, ...]:
     if 16 <= lagi <= 45:
         return (0, 1, 2, 3)
@@ -177,9 +204,8 @@ class CoreDecoderTests(unittest.TestCase):
     def test_psi_equations(self) -> None:
         check_psi_equation_and_table_coverage()
 
-    def test_bundled_tables_and_complete_frame(self) -> None:
-        expected_hash = "8a4e39db686f6de86375fc5f735001ea89b54c4736c65dabf9adfe624b5a442f"
-        self.assertEqual(hashlib.sha256(DEFAULT_TABLES.read_bytes()).hexdigest(), expected_hash)
+    def test_generated_tables_and_complete_frame(self) -> None:
+        self.assertEqual(table_digest(DEFAULT_TABLES), EXPECTED_TABLE_DIGEST)
 
         frame = PDCFrameParameters(
             lsp0=0,
@@ -221,8 +247,7 @@ def main() -> None:
     result = unittest.main(exit=False)
     if not result.result.wasSuccessful():
         raise SystemExit(1)
-    table_hash = hashlib.sha256(DEFAULT_TABLES.read_bytes()).hexdigest()
-    print(f"Decoder table SHA-256: {table_hash}")
+    print(f"Canonical decoder table SHA-256: {table_digest(DEFAULT_TABLES)}")
 
 
 if __name__ == "__main__":

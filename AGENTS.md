@@ -9,9 +9,10 @@ in Japanese MOVA handset video recordings.
 - Keep importable Python code in `src/pdc_audio`.
 - Keep automated tests in `tests` and portable Python helpers in `scripts`.
 - Keep project documentation in `docs`.
-- Keep standards, source recordings, extracted payloads, decoded audio, and
-  other large or redistribution-sensitive media outside this repository in the
-  sibling `pdc-audio-media` directory.
+- Keep standards, locally generated decoder tables, source recordings,
+  extracted payloads, decoded audio, and other large or
+  redistribution-sensitive media outside this repository in the sibling
+  `pdc-audio-media` directory.
 - Do not modify original recordings in place. Write converted or diagnostic
   outputs to a separate working directory.
 
@@ -32,6 +33,8 @@ in Japanese MOVA handset video recordings.
 - Use `python scripts/build.py` for the editable install and wheel build.
 - Use `python scripts/test.py` for routine unit and available media integration
   tests.
+- Generate the local decoder tables with `scripts/generate_arib_tables.py`;
+  never package or commit the resulting NPZ.
 - Treat a successful package build, import check, and automated test run as the
   normal build verification for this Python utility.
 - FFmpeg and FFprobe are optional runtime tools used only for container
@@ -54,7 +57,8 @@ in Japanese MOVA handset video recordings.
 
 - Make focused commits whose messages describe the development step or
   behaviour change.
-- Preserve imported historical snapshots as distinct commits; do not rewrite
-  them merely to match the current layout.
+- Preserve imported historical snapshots as distinct commits except when a
+  history rewrite is explicitly required to remove redistribution-sensitive
+  material.
 - Do not push, force-push, create remote branches or tags, or otherwise change
   remote state unless the user explicitly requests it.

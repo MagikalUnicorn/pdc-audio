@@ -342,6 +342,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    args.tables = args.tables.expanduser().resolve()
+    if not args.tables.is_file():
+        parser.error(
+            f"decoder tables were not found at {args.tables}; generate them "
+            "locally from the official ARIB PDF or pass --tables"
+        )
+
     output_wav = args.wav
     if not any((output_wav, args.asf, args.mp4, args.json, args.float_npy)):
         parser.error("no output requested; use --asf, --wav, --mp4, --json, or --float-npy")

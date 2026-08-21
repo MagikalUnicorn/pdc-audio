@@ -22,6 +22,3 @@ pdc-audio-preserve = "pdc_audio.preserve_semc_pdc_attachment:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.setuptools.package-data]
-pdc_audio = ["arib_std27_tables.npz"]
