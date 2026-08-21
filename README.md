@@ -27,6 +27,35 @@ docs/            development instructions and historical technical audits
 Standards, private recordings, and generated media are deliberately kept
 outside Git in the sibling `pdc-audio-media` directory.
 
+## Standards and references
+
+The decoder and its conformance audits are based on these supplied references:
+
+1. Association of Radio Industries and Businesses (ARIB), *Personal Digital
+   Cellular Telecommunication System*, RCR STD-27 L, Fascicle 2, Revision L,
+   30 November 2005, English translation. This is the normative source for the
+   PDC half-rate speech-decoder equations, bit mappings, CRC, codebooks, and
+   synthesis procedure used by the implementation.
+2. Association of Radio Industries and Businesses (ARIB), *Personal Digital
+   Cellular Telecommunication System: Quality Recommendation and Validation
+   Test for Speech Codec—Standard Technical Characteristics and Validation
+   Testing Methods Related to Speech Codec Connectivity and Speech Quality*,
+   ARIB TR-T1 Rev. 1.1, 25 July 2000, English translation. This describes codec
+   validation and the historical fixed-point master-codec/reference-file
+   process underlying the remaining bit-exactness limitations.
+3. Satoshi Miki, Kazunori Mano, Takehiro Moriya, Kumiko Oguchi, and Hitoshi
+   Ohmuro, “A Pitch Synchronous Innovation CELP (PSI-CELP) Coder for 2–4
+   kbit/s,” *Proceedings of ICASSP 1994*, vol. II, pp. II-113–II-116. This
+   provides technical background on the pitch-synchronous innovation method
+   used by the PDC half-rate codec.
+
+Local copies are expected under `../pdc-audio-media/standards` with the supplied
+filenames `ARIB PDC RCR STD-27 L.pdf`, `ARIB PDC RCR STD-27 TR-T01 v1.pdf`, and
+`NTT PSI-CELP Paper.pdf`. They remain outside the repository because of their
+copyright and redistribution terms. See [the core audit](docs/CORE_AUDIT.md)
+and [the final audit](docs/FINAL_CORE_AUDIT.md) for equation-level use of these
+references.
+
 ## Requirements and build
 
 PDC-Audio requires Python 3.11 or later and NumPy. FFmpeg is needed only for ASF
