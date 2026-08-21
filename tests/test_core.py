@@ -23,7 +23,7 @@ from pdc_audio.pdc_decoder import (
     decode_scb_code,
     psi_vector,
 )
-from pdc_audio.sony_unpack import strip_terminal_records
+from pdc_audio.semc_pdc_records import strip_terminal_records
 
 
 def legal_lagf(lagi: int) -> tuple[int, ...]:

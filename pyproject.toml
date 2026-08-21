@@ -14,7 +14,7 @@ dependencies = [
 
 [project.scripts]
 pdc-audio = "pdc_audio.decode_mova_asf:main"
-pdc-audio-decode-records = "pdc_audio.sony_unpack:main"
+pdc-audio-decode-records = "pdc_audio.semc_pdc_records:main"
 pdc-audio-extract = "pdc_audio.extract_semc_pdc_audio:main"
 pdc-audio-preserve = "pdc_audio.preserve_semc_pdc_attachment:main"
 

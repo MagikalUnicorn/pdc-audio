@@ -18,7 +18,7 @@ from .preserve_semc_pdc_attachment import (
     preserve_attachment,
     verify_preserved_attachment,
 )
-from .sony_unpack import frame_to_dict, strip_terminal_records, unpack_record
+from .semc_pdc_records import frame_to_dict, strip_terminal_records, unpack_record
 
 
 def pad_to_duration(samples: np.ndarray, duration_seconds: float) -> np.ndarray:
@@ -55,7 +55,7 @@ def _decode_frames(input_asf: Path, tables: Path) -> tuple[np.ndarray, list[dict
 
     # Marker and padding records can have a coincidentally valid all-zero CRC. Remove
     # their exact storage patterns, then accept any active trailer values whose speech
-    # bits pass the codec CRC rather than enforcing an SO505i-only trailer whitelist.
+    # bits pass the codec CRC rather than enforcing an observed trailer whitelist.
     active_records = strip_terminal_records(records)
     if not active_records:
         raise ValueError("no SEMC PDC-AUDIO speech records were found")
@@ -84,7 +84,7 @@ def decode_asf(
     normalize: bool = True,
     float_npy: Path | None = None,
 ) -> tuple[int, int, float]:
-    """Compatibility API retained for the v3 audit and external callers."""
+    """Decode a compatible MOVA ASF to WAV and return record/duration counts."""
     samples, report, active, nominal, duration = _decode_frames(input_asf, tables)
     padded = write_wav_with_duration(output_wav, samples, duration, normalize=normalize)
 
@@ -216,7 +216,7 @@ def mux_asf_preserving_original(
     output_asf.parent.mkdir(parents=True, exist_ok=True)
     _verify_wav(input_wav)
 
-    with tempfile.TemporaryDirectory(prefix="sony-pdc-asf-", dir=output_asf.parent) as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="pdc-audio-asf-", dir=output_asf.parent) as temp_dir:
         temp_dir_path = Path(temp_dir)
         remuxed = temp_dir_path / "remuxed-with-pcm.asf"
         patched = temp_dir_path / "remuxed-with-pcm-and-original-attachment.asf"
@@ -298,12 +298,6 @@ def main() -> None:
         )
     )
     parser.add_argument("input", type=Path, help="original MOVA ASF movie")
-    parser.add_argument(
-        "legacy_output_wav",
-        nargs="?",
-        type=Path,
-        help="legacy positional WAV output; prefer --wav",
-    )
     parser.add_argument("--wav", type=Path, help="optional decoded 8 kHz mono WAV")
     parser.add_argument(
         "--asf",
@@ -348,9 +342,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.legacy_output_wav and args.wav:
-        parser.error("specify either the positional WAV output or --wav, not both")
-    output_wav = args.wav or args.legacy_output_wav
+    output_wav = args.wav
     if not any((output_wav, args.asf, args.mp4, args.json, args.float_npy)):
         parser.error("no output requested; use --asf, --wav, --mp4, --json, or --float-npy")
 
@@ -364,7 +356,7 @@ def main() -> None:
         parser.error("--asf must not be the same path as the input ASF")
 
     # A temporary WAV is used when only a container output is requested.
-    with tempfile.TemporaryDirectory(prefix="sony-pdc-decode-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="pdc-audio-decode-") as temp_dir:
         working_wav = output_wav or (Path(temp_dir) / "decoded-pdc.wav")
         active, nominal, duration = decode_asf(
             input_asf,

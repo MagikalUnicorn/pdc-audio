@@ -14,7 +14,7 @@ TERMINAL_RECORDS = {
     bytes.fromhex("000000000000000000000000000000000000003000005300"),
 }
 
-# The Sony record stores 147 meaningful bits among the first 20 bytes.
+# The SEMC record stores 147 meaningful bits among the first 20 bytes.
 # Ordering here is the physical bit order discovered from cross-frame rank analysis.
 PHYSICAL_POSITIONS: list[tuple[int, int]] = []
 for byte in range(0, 8):
@@ -45,7 +45,7 @@ def extract_physical_bits(record: bytes) -> np.ndarray:
 
 
 def reverse_groups(bits: np.ndarray, group_lengths: tuple[int, ...]) -> np.ndarray:
-    """Reverse the meaningful bits inside each Sony 16-bit storage word."""
+    """Reverse the meaningful bits inside each SEMC 16-bit storage word."""
     bits = np.asarray(bits, dtype=np.uint8)
     if sum(group_lengths) != len(bits):
         raise ValueError("group lengths do not cover the input")

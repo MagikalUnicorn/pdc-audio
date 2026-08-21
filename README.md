@@ -15,13 +15,12 @@ workflow. It is a strong implementation of the error-free PDC half-rate /
 PSI-CELP equations, but it is not claimed to be bit-exact with the unavailable
 historical fixed-point reference implementation.
 
-The command-line interface is model-neutral and does not require or assume an
-SO505i filename. It accepts any MOVA ASF carrying the validated `SEMC PDC-AUDIO`
-descriptor, 16-byte object header, and 24-byte record layout. Active records are
-accepted by CRC rather than an SO505i-specific trailer whitelist. The supplied
-test corpus is from Sony Ericsson SO505i recordings; other MOVA manufacturers
-or containers may use different private storage and require an additional
-parser.
+The command-line interface is model-neutral. It accepts any MOVA ASF carrying
+the validated `SEMC PDC-AUDIO` descriptor, 16-byte object header, and 24-byte
+record layout. Active records are accepted by CRC rather than a device-specific
+trailer whitelist. The supplied test corpus is from Sony Ericsson SO505i
+recordings; other MOVA manufacturers or containers may use different private
+storage and require an additional parser.
 
 ## Repository layout
 
@@ -147,9 +146,6 @@ python scripts/convert_mova_pdc_audio.py \
 Useful options include `--float-npy`, `--mp4`, `--no-normalize`, `--force`,
 and `--ffmpeg PATH`. ASF output verifies the copied video packets, decoded PCM,
 and preserved binary descriptor by default; `--no-verify` disables that pass.
-
-`scripts/decode_mova_pdc_audio.py` is retained as the Python compatibility
-replacement for the older decode wrapper and accepts the same arguments.
 
 The installed `pdc-audio` command provides the same decoder interface. Lower
 level commands are also installed:

@@ -17,7 +17,7 @@ def main() -> None:
     parser.add_argument("--ffmpeg", default="ffmpeg")
     args = parser.parse_args()
 
-    with tempfile.TemporaryDirectory(prefix="sony-pdc-integration-test-") as directory:
+    with tempfile.TemporaryDirectory(prefix="pdc-audio-integration-test-") as directory:
         temp = Path(directory)
         wav = temp / "decoded.wav"
         output = temp / "output.asf"
