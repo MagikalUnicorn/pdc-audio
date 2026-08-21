@@ -1,5 +1,9 @@
 # Core decoder conformance audit — v3
 
+> Historical audit imported from `snapshot-v3-core-audit`. File paths and
+> commands below describe that archived snapshot; the current source is under
+> `src/pdc_audio` and its media-independent checks are under `tests`.
+
 This audit compares the error-free speech-decoder path against RCR STD-27 L-E Fascicle 2. It deliberately excludes the optional postfilter.
 
 ## Confirmed correction from frozen baseline v2

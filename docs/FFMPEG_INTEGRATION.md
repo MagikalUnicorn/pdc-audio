@@ -1,5 +1,8 @@
 # FFmpeg integration assessment
 
+> Historical design assessment retained from the imported v3.2/v3.3
+> snapshots. It is documentation, not an FFmpeg source tree in this repository.
+
 ## Conclusion
 
 The codec is suitable for FFmpeg, but **a libavcodec decoder alone would not decode these Sony ASF files**. `SEMC PDC-AUDIO` is an ASF Extended Content Description `BYTE_ARRAY`, not an ASF media stream. FFmpeg's ASF demuxer currently recognizes byte arrays only for `WM/Picture` and `ID3`; other byte-array tags are skipped. Therefore the integration requires both:

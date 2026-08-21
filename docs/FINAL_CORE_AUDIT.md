@@ -1,5 +1,8 @@
 # Final core-decoder correctness pass — v3.2
 
+> Historical audit imported from `snapshot-v3.2-final-audit`. The complete
+> original audit scripts and captured results remain available at that tag.
+
 ## Result
 
 No further algorithmic correction was found after the v3 adaptive-codebook priority fix. Version 3.2 deliberately leaves the decoder waveform unchanged from v3/v3.1 and adds a broader independent audit rather than another speculative change.

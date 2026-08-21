@@ -15,7 +15,9 @@ dist/
 *.json
 *.mp4
 *.npy
+*.pdf
 *.wav
+*.zip
 *.log
 
 # Editors and operating systems

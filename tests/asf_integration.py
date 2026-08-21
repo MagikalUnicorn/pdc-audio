@@ -4,8 +4,9 @@ from pathlib import Path
 import argparse
 import tempfile
 
-from decode_sony_asf import decode_asf, mux_asf_preserving_original
-from preserve_semc_pdc_attachment import verify_preserved_attachment
+from pdc_audio import DEFAULT_TABLES
+from pdc_audio.decode_sony_asf import decode_asf, mux_asf_preserving_original
+from pdc_audio.preserve_semc_pdc_attachment import verify_preserved_attachment
 
 
 def main() -> None:
@@ -16,7 +17,6 @@ def main() -> None:
     parser.add_argument("--ffmpeg", default="ffmpeg")
     args = parser.parse_args()
 
-    root = Path(__file__).resolve().parent
     with tempfile.TemporaryDirectory(prefix="sony-pdc-integration-test-") as directory:
         temp = Path(directory)
         wav = temp / "decoded.wav"
@@ -24,7 +24,7 @@ def main() -> None:
         active, stored, duration = decode_asf(
             args.input,
             wav,
-            root / "arib_std27_tables.npz",
+            DEFAULT_TABLES,
         )
         verification = mux_asf_preserving_original(
             args.input,

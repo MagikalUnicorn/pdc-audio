@@ -29,7 +29,7 @@ in Japanese MOVA handset video recordings.
 - Support Python 3.11 or later.
 - Use a repository-local virtual environment (`.venv`) for development
   dependencies; do not commit it.
-- Install the project in editable mode before testing: `py -m pip install -e .`.
+- Install the project in editable mode before testing: `python -m pip install -e .`.
 - Treat a successful package build, import check, and automated test run as the
   normal build verification for this Python utility.
 - FFmpeg and FFprobe are optional runtime tools used only for container

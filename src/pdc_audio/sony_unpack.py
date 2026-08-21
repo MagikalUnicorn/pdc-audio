@@ -5,7 +5,8 @@ import argparse
 import json
 import numpy as np
 
-from pdc_decoder import PDCFrameParameters, PDCDecoder, write_wav
+from . import DEFAULT_TABLES
+from .pdc_decoder import PDCFrameParameters, PDCDecoder, write_wav
 
 # The Sony record stores 147 meaningful bits among the first 20 bytes.
 # Ordering here is the physical bit order discovered from cross-frame rank analysis.
@@ -188,7 +189,7 @@ def main() -> None:
     parser.add_argument(
         "--tables",
         type=Path,
-        default=Path(__file__).with_name("arib_std27_tables.npz"),
+        default=DEFAULT_TABLES,
         help="parsed ARIB codebook table file",
     )
     parser.add_argument("--json", type=Path, help="optional decoded parameter dump")

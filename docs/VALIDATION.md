@@ -1,5 +1,7 @@
 # v3.3 validation
 
+> Historical validation record imported from `snapshot-v3.3-final-asf`.
+
 The production workflow was run against all five supplied Sony SO505i clips (130–134).
 
 For every clip:

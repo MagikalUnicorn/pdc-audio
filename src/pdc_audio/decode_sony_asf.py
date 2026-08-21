@@ -11,13 +11,14 @@ import wave
 
 import numpy as np
 
-from extract_semc_pdc_audio import extract_semc_pdc_audio
-from pdc_decoder import PDCDecoder, write_wav
-from preserve_semc_pdc_attachment import (
+from . import DEFAULT_TABLES
+from .extract_semc_pdc_audio import extract_semc_pdc_audio
+from .pdc_decoder import PDCDecoder, write_wav
+from .preserve_semc_pdc_attachment import (
     preserve_attachment,
     verify_preserved_attachment,
 )
-from sony_unpack import frame_to_dict, unpack_record
+from .sony_unpack import frame_to_dict, unpack_record
 
 
 ACTIVE_TRAILERS = {
@@ -332,7 +333,7 @@ def main() -> None:
     parser.add_argument(
         "--tables",
         type=Path,
-        default=Path(__file__).with_name("arib_std27_tables.npz"),
+        default=DEFAULT_TABLES,
         help="parsed ARIB codebook table file",
     )
     parser.add_argument("--json", type=Path, help="optional decoded parameter dump")

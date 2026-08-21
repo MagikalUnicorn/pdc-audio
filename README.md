@@ -1,138 +1,122 @@
-# Sony SO505i PDC / PSI-CELP decoder — v3.3 final ASF workflow
+# PDC-Audio
 
-This package decodes the Sony SO505i `SEMC PDC-AUDIO` byte array and can create a new playable ASF that contains:
+PDC-Audio recovers and decodes the `SEMC PDC-AUDIO` object embedded in video
+recordings made by Sony Japanese MOVA handsets, including the SO505i. The
+decoded output is mono, 8 kHz, signed 16-bit PCM.
 
-- the original MJPEG video packets, copied without re-encoding;
-- decoded mono 8 kHz 16-bit PCM audio;
-- the original `SEMC PDC-AUDIO` ASF `BYTE_ARRAY` descriptor, copied byte-for-byte.
+The utility can also create a new playable ASF containing the original MJPEG
+video packets, decoded PCM audio, and the original proprietary audio descriptor.
+The source recording is never modified in place.
 
-The original source ASF is never modified. The default PowerShell command writes a new file beside it.
+## Status
 
-## Requirements
+The decoder is the audited floating-point v3 core with the v3.3 ASF-preserving
+workflow. It is a strong implementation of the error-free PDC half-rate /
+PSI-CELP equations, but it is not claimed to be bit-exact with the unavailable
+historical fixed-point reference implementation.
 
-- Windows 11 PowerShell
-- Python 3.11 or later
-- NumPy
-- FFmpeg on `PATH`, or supplied with `-Ffmpeg`
+## Repository layout
 
-Install NumPy:
-
-```powershell
-py -m pip install -r .\requirements.txt
+```text
+src/pdc_audio/   importable decoder and ASF tooling
+scripts/         PowerShell conversion entry points
+tests/           media-independent core tests and optional ASF integration test
+docs/            historical audits, validation, and integration notes
 ```
 
-## Simplest PowerShell use
+The three supplied standards/reference PDFs are deliberately not kept in Git.
+They live in the sibling `pdc-audio-media/standards` directory, alongside any
+private source recordings or generated media used for local validation.
 
-From this package directory:
+## Installation
+
+PDC-Audio requires Python 3.11 or later and NumPy. FFmpeg is needed only for ASF
+or MP4 output; decoding to WAV does not require it.
 
 ```powershell
-.\Convert-SonySo505iPdcAudio.ps1 `
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+```
+
+On MSYS2, activate `.venv/bin/activate` instead. An editable install provides
+the `pdc-audio` command and keeps the bundled audited codebook tables available.
+
+For the MinGW64 environment used by this repository, the equivalent setup is:
+
+```bash
+pacman -S --needed mingw-w64-x86_64-python-numpy \
+    mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-setuptools \
+    mingw-w64-x86_64-python-build mingw-w64-x86_64-ffmpeg
+python -m venv --system-site-packages .venv
+source .venv/bin/activate
+python -m pip install --no-build-isolation --no-deps -e .
+```
+
+## Use
+
+The simplest Windows workflow creates a decoded ASF beside the source file:
+
+```powershell
+.\scripts\Convert-SonySo505iPdcAudio.ps1 `
     -InputAsf "C:\Videos\Phone Pictures 130.asf"
 ```
 
-With no explicit output options, this creates:
-
-```text
-C:\Videos\Phone Pictures 130 - decoded PDC.asf
-```
-
-That output contains the copied MJPEG stream, decoded PCM audio, and the original binary attachment.
-
-## Choose an output path
+Choose outputs explicitly when required:
 
 ```powershell
-.\Convert-SonySo505iPdcAudio.ps1 `
-    -InputAsf "C:\Videos\Phone Pictures 130.asf" `
-    -OutputAsf "C:\Videos\Phone Pictures 130 restored.asf"
+pdc-audio "C:\Videos\Phone Pictures 130.asf" `
+    --asf "C:\Videos\Phone Pictures 130 restored.asf" `
+    --wav "C:\Videos\Phone Pictures 130 decoded.wav" `
+    --json "C:\Videos\Phone Pictures 130 parameters.json"
 ```
 
-Use `-Force` to replace an existing output file. The script still refuses to overwrite the source ASF.
-
-## Also keep the decoded WAV and parameter dump
+The module form works without relying on the console-script name:
 
 ```powershell
-.\Convert-SonySo505iPdcAudio.ps1 `
-    -InputAsf "C:\Videos\Phone Pictures 130.asf" `
-    -OutputAsf "C:\Videos\Phone Pictures 130 restored.asf" `
-    -OutputWav "C:\Videos\Phone Pictures 130 decoded.wav" `
-    -ParameterJson "C:\Videos\Phone Pictures 130 parameters.json"
+python -m pdc_audio "C:\Videos\Phone Pictures 130.asf" `
+    --wav "C:\Videos\Phone Pictures 130 decoded.wav"
 ```
 
-The historical wrapper name remains available:
+Useful options include `--float-npy`, `--mp4`, `--no-normalize`, `--force`,
+and `--ffmpeg PATH`. ASF output verifies the copied video packets, decoded PCM,
+and preserved binary descriptor by default; `--no-verify` disables that pass.
+
+Lower-level installed commands are also available:
+
+- `pdc-audio-extract` extracts the proprietary object from an ASF.
+- `pdc-audio-decode-records` decodes an extracted sequence of 24-byte records.
+- `pdc-audio-preserve` copies the descriptor into an already-remuxed ASF.
+
+## Test and build
+
+The core suite does not require private handset recordings:
 
 ```powershell
-.\Decode-SonyPdcAudio.ps1 -InputAsf "C:\Videos\Phone Pictures 130.asf"
+python -m unittest discover -s tests -p "test_*.py"
+python -m pip wheel . --no-deps --wheel-dir dist
 ```
 
-## Batch conversion
+Run the end-to-end ASF test when an original SO505i recording and FFmpeg are
+available:
 
 ```powershell
-Get-ChildItem "C:\Videos" -Filter "*.asf" | ForEach-Object {
-    $output = Join-Path $_.DirectoryName ($_.BaseName + " - decoded PDC.asf")
-    .\Convert-SonySo505iPdcAudio.ps1 `
-        -InputAsf $_.FullName `
-        -OutputAsf $output
-}
-```
-
-## Verification performed by default
-
-After creating the ASF, the tool verifies:
-
-1. the source and output video packet SHA-256 hashes are identical;
-2. the temporary decoded WAV and output PCM packet SHA-256 hashes are identical;
-3. the complete `SEMC PDC-AUDIO` descriptor entry is byte-for-byte identical.
-
-Use `-SkipVerification` only when speed matters more than the final integrity pass.
-
-## Direct Python use
-
-```powershell
-py .\decode_sony_asf.py `
-    "C:\Videos\Phone Pictures 130.asf" `
-    --asf "C:\Videos\Phone Pictures 130 restored.asf"
-```
-
-Optional outputs:
-
-```text
---wav PATH          decoded PCM WAV
---json PATH         decoded parameter dump
---float-npy PATH    lossless float64 synthesis array
---mp4 PATH          H.264/AAC listening copy
---no-normalize      native decoder amplitude with 16-bit saturation
---no-verify         skip ASF integrity verification
---force             replace existing outputs
---ffmpeg PATH       explicit ffmpeg.exe path
-```
-
-## End-to-end self-test
-
-Run against one original Sony clip:
-
-```powershell
-py .\asf_integration_test.py `
+python .\tests\asf_integration.py `
     "C:\Videos\Phone Pictures 130.asf"
 ```
 
-The test creates temporary files and checks decoding, MJPEG packet identity, PCM packet identity, and exact attachment preservation.
+## Imported development history
 
-## Production files
+The four supplied archives were imported as distinct, byte-for-byte snapshots
+before the repository was reorganised. They can be inspected with these tags:
 
-- `Convert-SonySo505iPdcAudio.ps1` — primary Windows PowerShell entry point
-- `Decode-SonyPdcAudio.ps1` — compatibility wrapper
-- `decode_sony_asf.py` — decode and container workflow
-- `preserve_semc_pdc_attachment.py` — exact ASF descriptor preservation
-- `extract_semc_pdc_audio.py` — Sony ASF binary-object extraction
-- `sony_unpack.py` — Sony 24-byte record unpacking and CRC validation
-- `pdc_decoder.py` — v3 audited PDC half-rate / PSI-CELP synthesis core
-- `arib_std27_tables.npz` — decoder tables
-- `asf_integration_test.py` — portable end-to-end test
+- `snapshot-v2`
+- `snapshot-v3-core-audit`
+- `snapshot-v3.2-final-audit`
+- `snapshot-v3.3-final-asf`
 
-## Decoder status
-
-The core is the frozen v3 decoder after the final equation-level audit. No waveform change was made for v3.3; this release adds the integrated ASF-preserving workflow and verification.
-
-It is a strong error-free floating-point implementation, but not formally claimed to be sample-for-sample bit-exact with the historical fixed-point master codec. The remaining blockers are the unavailable official conformance vectors, exact fixed-point arithmetic details, and the first-frame reset state.
-
-See `FINAL_CORE_AUDIT.md` and `FFMPEG_INTEGRATION.md` for the detailed technical assessment.
+See [the core audit](docs/CORE_AUDIT.md),
+[the final audit](docs/FINAL_CORE_AUDIT.md),
+[v3.3 validation](docs/VALIDATION.md), and
+[the FFmpeg integration assessment](docs/FFMPEG_INTEGRATION.md) for technical
+detail and known limitations.
