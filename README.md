@@ -150,3 +150,7 @@ This lower-level command removes the sample's two known trailing marker records 
 5. The decoder needs comparison against official PDC half-rate test vectors before it can be called bit-exact.
 
 FFmpeg's existing CELP-family decoders were useful as implementation references for LSP/LPC conversion, fractional interpolation and the `1/A(z)` synthesis-filter structure, but FFmpeg does not currently contain a PDC half-rate / PSI-CELP decoder or Sony `SEMC PDC-AUDIO` demuxer.
+
+## v3.2 final correctness pass and FFmpeg assessment
+
+Version 3.2 adds `final_core_audit.py`, `FINAL_CORE_AUDIT.md`, and `FFMPEG_INTEGRATION.md`. It intentionally makes no waveform change from v3/v3.1: no additional normative core error was found. The new audit independently round-trips all 790 active Sony records, cross-checks every CRC with a second polynomial implementation, validates all decoded LPC filters, and compares the synthesis recurrence with SciPy.

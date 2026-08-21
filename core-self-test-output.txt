@@ -1,0 +1,7 @@
+Core self-test passed.
+  256/256 lag codes checked
+  1024/1024 two-channel SCB transmission combinations round-tripped
+  all legal ACB lag/fraction combinations matched the normative equation and priority
+  all legal PSI combinations matched the normative equation and table coverage
+  clips 130-134: 158/158 CRC-valid speech records and 6.400-second WAVs
+  table SHA-256: 8a4e39db686f6de86375fc5f735001ea89b54c4736c65dabf9adfe624b5a442f

@@ -1,0 +1,7 @@
+Final core audit passed.
+  790/790 Sony speech records round-tripped at the meaningful-bit level
+  790/790 CRCs matched an independent polynomial implementation
+  3,160 decoded subframes had ordered LSPs and stable LPC filters
+  synthesis recurrence cross-check max error: 1.643e-06
+  tables SHA-256: 8a4e39db686f6de86375fc5f735001ea89b54c4736c65dabf9adfe624b5a442f
+  wrote: /mnt/data/Sony_SO505i_PDC_Decoder_v3_2_final_audit/final-core-audit-results.json
