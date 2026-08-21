@@ -214,7 +214,7 @@ def main() -> None:
             "Copy the exact SEMC PDC-AUDIO extended-content descriptor into a remuxed ASF."
         )
     )
-    parser.add_argument("source_asf", type=Path, help="Original Sony ASF")
+    parser.add_argument("source_asf", type=Path, help="Original MOVA ASF")
     parser.add_argument("target_asf", type=Path, help="Remuxed ASF containing decoded PCM")
     parser.add_argument("output_asf", type=Path, help="Output ASF containing both")
     args = parser.parse_args()

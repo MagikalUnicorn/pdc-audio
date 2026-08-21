@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pdc-audio"
 version = "3.3.0"
-description = "Decode Sony MOVA SEMC PDC-AUDIO objects from ASF recordings"
+description = "Decode MOVA SEMC PDC-AUDIO objects from compatible ASF recordings"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pdc-audio = "pdc_audio.decode_sony_asf:main"
+pdc-audio = "pdc_audio.decode_mova_asf:main"
 pdc-audio-decode-records = "pdc_audio.sony_unpack:main"
 pdc-audio-extract = "pdc_audio.extract_semc_pdc_audio:main"
 pdc-audio-preserve = "pdc_audio.preserve_semc_pdc_attachment:main"

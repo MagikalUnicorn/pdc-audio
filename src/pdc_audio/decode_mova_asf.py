@@ -18,19 +18,7 @@ from .preserve_semc_pdc_attachment import (
     preserve_attachment,
     verify_preserved_attachment,
 )
-from .sony_unpack import frame_to_dict, unpack_record
-
-
-ACTIVE_TRAILERS = {
-    # Trailer family observed in Phone Pictures 130.
-    bytes.fromhex("1d84537d"),
-    bytes.fromhex("2b3853ef"),
-    # Trailer family observed in Phone Pictures 131-134.
-    bytes.fromhex("9d84537d"),
-    bytes.fromhex("2b3053ef"),
-    # Shared trailer value.
-    bytes.fromhex("c81653ff"),
-}
+from .sony_unpack import frame_to_dict, strip_terminal_records, unpack_record
 
 
 def pad_to_duration(samples: np.ndarray, duration_seconds: float) -> np.ndarray:
@@ -56,30 +44,25 @@ def write_wav_with_duration(
 def _decode_frames(input_asf: Path, tables: Path) -> tuple[np.ndarray, list[dict], int, int, float]:
     obj = extract_semc_pdc_audio(input_asf)
     if obj.frame_size != 24:
-        raise ValueError(f"unsupported Sony record size {obj.frame_size}; expected 24")
+        raise ValueError(
+            f"unsupported SEMC PDC-AUDIO record size {obj.frame_size}; expected 24"
+        )
 
     records = [
         obj.frame_data[offset : offset + obj.frame_size]
         for offset in range(0, len(obj.frame_data), obj.frame_size)
     ]
 
-    # The object ends with one Sony marker record and one all-zero padding record.
-    # Find the contiguous prefix of recognized active records rather than treating a
-    # coincidental CRC on marker/padding data as a speech frame.
-    active_count = len(records)
-    while active_count and records[active_count - 1][20:24] not in ACTIVE_TRAILERS:
-        active_count -= 1
-    if active_count == 0:
-        raise ValueError("no Sony PDC-AUDIO speech records with recognized trailers were found")
-    for index in range(active_count):
-        if records[index][20:24] not in ACTIVE_TRAILERS:
-            raise ValueError(
-                f"unexpected non-speech marker inside the active record sequence at {index}"
-            )
+    # Marker and padding records can have a coincidentally valid all-zero CRC. Remove
+    # their exact storage patterns, then accept any active trailer values whose speech
+    # bits pass the codec CRC rather than enforcing an SO505i-only trailer whitelist.
+    active_records = strip_terminal_records(records)
+    if not active_records:
+        raise ValueError("no SEMC PDC-AUDIO speech records were found")
 
     frames = []
     report: list[dict] = []
-    for index, record in enumerate(records[:active_count]):
+    for index, record in enumerate(active_records):
         frame, crc_ok = unpack_record(record, check_crc=False)
         if not crc_ok:
             raise ValueError(f"CRC mismatch in active speech record {index}")
@@ -228,7 +211,7 @@ def mux_asf_preserving_original(
     input_wav = input_wav.resolve()
 
     if input_asf == output_asf:
-        raise ValueError("output ASF must not overwrite the original Sony ASF")
+        raise ValueError("output ASF must not overwrite the original MOVA ASF")
 
     output_asf.parent.mkdir(parents=True, exist_ok=True)
     _verify_wav(input_wav)
@@ -309,11 +292,12 @@ def _check_output(path: Path | None, *, force: bool) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Decode Sony SO505i SEMC PDC-AUDIO and optionally add the decoded PCM "
-            "to a new ASF while preserving the original MJPEG and binary descriptor."
+            "Decode a supported MOVA SEMC PDC-AUDIO object and optionally add "
+            "the decoded PCM to a new ASF while preserving the original MJPEG "
+            "and binary descriptor."
         )
     )
-    parser.add_argument("input", type=Path, help="original Sony ASF movie")
+    parser.add_argument("input", type=Path, help="original MOVA ASF movie")
     parser.add_argument(
         "legacy_output_wav",
         nargs="?",

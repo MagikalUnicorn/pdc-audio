@@ -1,4 +1,4 @@
-"""Decode one external Sony ASF without modifying the source recording."""
+"""Decode one supported MOVA ASF without modifying the source recording."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from _common import REPOSITORY_ROOT, find_ffmpeg, python_environment, venv_pytho
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("input", type=Path, help="source Sony ASF")
+    parser.add_argument("input", type=Path, help="source MOVA ASF")
     parser.add_argument("--asf", type=Path, help="verified decoded ASF output")
     parser.add_argument("--wav", type=Path, help="decoded PCM WAV output")
     parser.add_argument("--json", type=Path, help="decoded parameter output")

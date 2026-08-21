@@ -8,6 +8,12 @@ import numpy as np
 from . import DEFAULT_TABLES
 from .pdc_decoder import PDCFrameParameters, PDCDecoder, write_wav
 
+
+TERMINAL_RECORDS = {
+    bytes(24),
+    bytes.fromhex("000000000000000000000000000000000000003000005300"),
+}
+
 # The Sony record stores 147 meaningful bits among the first 20 bytes.
 # Ordering here is the physical bit order discovered from cross-frame rank analysis.
 PHYSICAL_POSITIONS: list[tuple[int, int]] = []
@@ -156,18 +162,20 @@ def unpack_record(record: bytes, check_crc: bool = True) -> tuple[PDCFrameParame
     return parameters_from_p_np(protected, np_bits), crc_ok
 
 
+def strip_terminal_records(records: list[bytes]) -> list[bytes]:
+    """Return the speech prefix after removing known MOVA marker/padding records."""
+    active = list(records)
+    while active and active[-1] in TERMINAL_RECORDS:
+        active.pop()
+    return active
+
+
 def load_records(path: str | Path, active_only: bool = True) -> list[bytes]:
     data = Path(path).read_bytes()
     if len(data) % 24:
         raise ValueError(f"record file length {len(data)} is not divisible by 24")
     records = [data[i:i + 24] for i in range(0, len(data), 24)]
-    if active_only:
-        # Sony appends one special end marker and one zero record in this sample.
-        while records and records[-1] == bytes(24):
-            records.pop()
-        if records and records[-1][:19] == bytes(19):
-            records.pop()
-    return records
+    return strip_terminal_records(records) if active_only else records
 
 
 def frame_to_dict(frame: PDCFrameParameters, index: int, crc_ok: bool) -> dict[str, object]:
@@ -183,7 +191,7 @@ def frame_to_dict(frame: PDCFrameParameters, index: int, crc_ok: bool) -> dict[s
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Decode Sony SEMC PDC-AUDIO records to WAV")
+    parser = argparse.ArgumentParser(description="Decode MOVA SEMC PDC-AUDIO records to WAV")
     parser.add_argument("input", type=Path, help="160x24-byte frame payload")
     parser.add_argument("output", type=Path, help="output mono 8 kHz WAV")
     parser.add_argument(

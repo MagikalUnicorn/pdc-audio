@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import argparse
+import shutil
 import subprocess
 import sys
 
@@ -29,6 +30,17 @@ def ensure_environment() -> Path:
             ]
         )
         return venv_python(required=True)
+
+
+def clean_build_outputs() -> None:
+    build_directory = REPOSITORY_ROOT / "build"
+    if build_directory.is_dir():
+        shutil.rmtree(build_directory)
+
+    distribution_directory = REPOSITORY_ROOT / "dist"
+    if distribution_directory.is_dir():
+        for wheel in distribution_directory.glob("pdc_audio-*.whl"):
+            wheel.unlink()
 
 
 def main() -> None:
@@ -67,6 +79,7 @@ def main() -> None:
     )
 
     print("Building the wheel...", flush=True)
+    clean_build_outputs()
     build_available = subprocess.run(
         [str(python), "-c", "import build"],
         cwd=REPOSITORY_ROOT,

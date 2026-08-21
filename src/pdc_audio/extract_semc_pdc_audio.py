@@ -84,8 +84,8 @@ def extract_semc_pdc_audio(asf_path: str | Path) -> SemcPdcAudioObject:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Extract Sony SEMC PDC-AUDIO from an ASF movie")
-    parser.add_argument("input", type=Path, help="Sony ASF movie")
+    parser = argparse.ArgumentParser(description="Extract SEMC PDC-AUDIO from a MOVA ASF movie")
+    parser.add_argument("input", type=Path, help="MOVA ASF movie")
     parser.add_argument("output", type=Path, help="output raw payload (.bin)")
     parser.add_argument("--frames", type=Path, help="optional output containing only 24-byte records")
     args = parser.parse_args()

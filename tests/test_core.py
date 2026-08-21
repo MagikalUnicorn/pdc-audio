@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 import hashlib
 import unittest
 
 import numpy as np
 
 from pdc_audio import DEFAULT_TABLES
+from pdc_audio.decode_mova_asf import _decode_frames
 from pdc_audio.pdc_decoder import (
     NSUB,
     PDCDecoder,
@@ -19,6 +23,7 @@ from pdc_audio.pdc_decoder import (
     decode_scb_code,
     psi_vector,
 )
+from pdc_audio.sony_unpack import strip_terminal_records
 
 
 def legal_lagf(lagi: int) -> tuple[int, ...]:
@@ -189,6 +194,27 @@ class CoreDecoderTests(unittest.TestCase):
         decoded = PDCDecoder(DEFAULT_TABLES).decode([frame])
         self.assertEqual(decoded.shape, (320,))
         self.assertTrue(np.all(np.isfinite(decoded)))
+
+    def test_terminal_records_do_not_require_an_active_trailer_whitelist(self) -> None:
+        speech = bytes.fromhex("01" + "00" * 19 + "11223344")
+        marker = bytes.fromhex("00" * 19 + "30" + "00005300")
+        padding = bytes(24)
+        self.assertEqual(strip_terminal_records([speech, marker, padding]), [speech])
+
+        # Trailer bytes are outside the 147 meaningful codec bits. A valid frame with
+        # a previously unseen trailer must therefore pass the complete decode path.
+        crc_valid_speech = bytes(20) + bytes.fromhex("11223344")
+        obj = SimpleNamespace(
+            frame_size=24,
+            frame_data=crc_valid_speech + marker + padding,
+        )
+        with patch("pdc_audio.decode_mova_asf.extract_semc_pdc_audio", return_value=obj):
+            samples, report, active, stored, duration = _decode_frames(
+                Path("unused.asf"), DEFAULT_TABLES
+            )
+        self.assertEqual((active, stored, duration), (1, 3, 0.12))
+        self.assertEqual(samples.shape, (320,))
+        self.assertEqual(len(report), 1)
 
 
 def main() -> None:

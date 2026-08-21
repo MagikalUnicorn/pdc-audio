@@ -5,7 +5,7 @@ import argparse
 import tempfile
 
 from pdc_audio import DEFAULT_TABLES
-from pdc_audio.decode_sony_asf import decode_asf, mux_asf_preserving_original
+from pdc_audio.decode_mova_asf import decode_asf, mux_asf_preserving_original
 from pdc_audio.preserve_semc_pdc_attachment import verify_preserved_attachment
 
 
@@ -13,7 +13,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="End-to-end test of decoded PCM insertion and ASF preservation"
     )
-    parser.add_argument("input", type=Path, help="Sony SO505i ASF test clip")
+    parser.add_argument("input", type=Path, help="supported MOVA ASF test clip")
     parser.add_argument("--ffmpeg", default="ffmpeg")
     args = parser.parse_args()
 
