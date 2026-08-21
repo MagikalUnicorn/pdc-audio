@@ -1,49 +1,37 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [string]$InputAsf,
+    [Parameter(Mandatory, Position = 0)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string] $InputAsf,
 
-    [Parameter(Mandatory)]
-    [string]$OutputWav,
-
-    [string]$OutputMp4,
-
-    [string]$ParameterJson,
-
-    [string]$FloatNpy,
-
-    [switch]$NoNormalize,
-
-    [string]$Python = "python"
+    [string] $OutputAsf,
+    [string] $OutputWav,
+    [string] $ParameterJson,
+    [string] $FloatNpy,
+    [string] $OutputMp4,
+    [switch] $NoNormalize,
+    [switch] $SkipVerification,
+    [switch] $Force,
+    [string] $Python,
+    [string] $Ffmpeg
 )
 
-$ErrorActionPreference = "Stop"
-$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
-$decoder = Join-Path $scriptDirectory "decode_sony_asf.py"
-
-$arguments = @(
-    $decoder,
-    $InputAsf,
-    $OutputWav
-)
-
-if ($OutputMp4) {
-    $arguments += @("--mp4", $OutputMp4)
+$ErrorActionPreference = 'Stop'
+$converter = Join-Path $PSScriptRoot 'Convert-SonySo505iPdcAudio.ps1'
+$forward = @{
+    InputAsf = $InputAsf
 }
-
-if ($ParameterJson) {
-    $arguments += @("--json", $ParameterJson)
+foreach ($name in @(
+    'OutputAsf', 'OutputWav', 'ParameterJson', 'FloatNpy', 'OutputMp4',
+    'Python', 'Ffmpeg'
+)) {
+    $value = Get-Variable -Name $name -ValueOnly
+    if ($value) {
+        $forward[$name] = $value
+    }
 }
+if ($NoNormalize) { $forward['NoNormalize'] = $true }
+if ($SkipVerification) { $forward['SkipVerification'] = $true }
+if ($Force) { $forward['Force'] = $true }
 
-if ($FloatNpy) {
-    $arguments += @("--float-npy", $FloatNpy)
-}
-
-if ($NoNormalize) {
-    $arguments += "--no-normalize"
-}
-
-& $Python @arguments
-if ($LASTEXITCODE -ne 0) {
-    throw "The Sony PDC-AUDIO decoder exited with code $LASTEXITCODE."
-}
+& $converter @forward

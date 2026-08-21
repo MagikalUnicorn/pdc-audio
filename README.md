@@ -1,156 +1,138 @@
-# Sony SO505i PDC / PSI-CELP audio decoder — core-audit v3
+# Sony SO505i PDC / PSI-CELP decoder — v3.3 final ASF workflow
 
-This package supersedes the experimental v2 decoder for core-decoder work. The frozen v2 package remains the listening baseline, but v3 corrects the RCR STD-27 adaptive-codebook duplicate-position priority and reconstructs the fixed/stochastic excitation tables on their exact Q15/Q7 grids. See [`CORE_AUDIT.md`](CORE_AUDIT.md) for the equation-level audit, tests and remaining blockers to a bit-exact claim.
+This package decodes the Sony SO505i `SEMC PDC-AUDIO` byte array and can create a new playable ASF that contains:
 
+- the original MJPEG video packets, copied without re-encoding;
+- decoded mono 8 kHz 16-bit PCM audio;
+- the original `SEMC PDC-AUDIO` ASF `BYTE_ARRAY` descriptor, copied byte-for-byte.
 
-This is a first working floating-point decoder for the `SEMC PDC-AUDIO` byte array stored in Sony SO505i ASF movies.
-
-## Result for the supplied movie
-
-- ASF duration: 6.400 seconds
-- Stored records: 160 × 24 bytes
-- Codec records: 158
-- Trailing non-codec records: 2 (marker/padding)
-- Codec frame duration: 40 ms
-- Decoded speech duration: 6.320 seconds
-- Output WAV duration: 6.400 seconds after adding 80 ms of trailing silence
-- CRC-valid codec records: 158 / 158
-- Output format: mono, 8 kHz, signed 16-bit PCM
-
-The implementation is intentionally described as experimental: it omits the optional speech postfilter and is not yet checked against an official bit-exact PDC half-rate conformance vector. The decoded waveform is finite, unclipped after normalization, and has a speech-like spectrogram.
-
-
-## Correction made after testing clips 131–134
-
-Testing the wider sample set exposed a protected-parameter bit-order error in the first prototype. ARIB Table 5.2.2.2-2 states that, for example, `P[65]` is LSP0 bit 0 (the LSB) and `P[59]` is LSP0 bit 6. The first prototype reconstructed protected parameters in the opposite direction. Version 2 reverses each protected parameter slice before converting it to an integer. Unprotected `NP[x]` parameter slices were already in the correct order.
-
-The v2 decoder successfully processes Phone Pictures 130–134. Each file contains 160 stored records, of which 158 are speech records and the last two are marker/padding records; all 158 speech records pass the 9-bit CRC.
-
-## What was reverse-engineered
-
-The audio is not an ordinary ASF audio stream. It is an ASF extended-content BYTE_ARRAY descriptor named `SEMC PDC-AUDIO`.
-
-The 3,856-byte payload is:
-
-- 16-byte Sony header
-- 3,840 bytes of records (`160 × 24`)
-
-Each active 24-byte record contains the standard PDC half-rate information bits rather than the radio-channel convolutionally encoded/interleaved frame:
-
-- 66 protected speech bits
-- 9-bit CRC
-- 72 unprotected speech bits
-- total: 147 meaningful bits
-
-The first 75 bits are the ARIB `CVin[0..74]` sequence (protected bits plus CRC in the standard convolutional-input order). The remaining 72 are `NP[0..71]`.
-
-Sony stores meaningful bits MSB-first inside little-endian 16-bit storage words, with padding around the two logical blocks:
-
-| Storage bytes | Meaningful word bits | Decoded source bits |
-|---|---:|---|
-| 0–1 | 0–15 | `CVin[0..15]` |
-| 2–3 | 0–15 | `CVin[16..31]` |
-| 4–5 | 0–15 | `CVin[32..47]` |
-| 6–7 | 0–15 | `CVin[48..63]` |
-| 8–9 | 5–15 | `CVin[64..74]` |
-| 10–11 | 0–13 | `NP[0..13]` |
-| 12–13 | 0–15 | `NP[14..29]` |
-| 14–15 | 0–15 | `NP[30..45]` |
-| 16–17 | 0–15 | `NP[46..61]` |
-| 18–19 | 6–15 | `NP[62..71]` |
-| 20–23 | — | Sony record trailer, not codec data |
-
-The active record trailers observed across the tested SO505i clips are:
-
-```text
-1D 84 53 7D
-2B 38 53 EF
-9D 84 53 7D
-2B 30 53 EF
-C8 16 53 FF
-```
-
-The first two occur in Phone Pictures 130; the next two occur in Phone Pictures 131–134; `C8 16 53 FF` is shared. The exact purpose of the trailer bits remains unknown.
-
-The 9-bit CRC uses:
-
-```text
-G(x) = 1 + x + x² + x⁵ + x⁸ + x⁹
-```
-
-All 158 active records pass this CRC after unpacking.
+The original source ASF is never modified. The default PowerShell command writes a new file beside it.
 
 ## Requirements
 
+- Windows 11 PowerShell
 - Python 3.11 or later
 - NumPy
-- FFmpeg only when creating an MP4 with the recovered audio
+- FFmpeg on `PATH`, or supplied with `-Ffmpeg`
 
-Install NumPy in PowerShell:
+Install NumPy:
 
 ```powershell
-py -m pip install numpy
+py -m pip install -r .\requirements.txt
 ```
 
-## Decode an ASF directly
+## Simplest PowerShell use
 
-From this directory:
+From this package directory:
+
+```powershell
+.\Convert-SonySo505iPdcAudio.ps1 `
+    -InputAsf "C:\Videos\Phone Pictures 130.asf"
+```
+
+With no explicit output options, this creates:
+
+```text
+C:\Videos\Phone Pictures 130 - decoded PDC.asf
+```
+
+That output contains the copied MJPEG stream, decoded PCM audio, and the original binary attachment.
+
+## Choose an output path
+
+```powershell
+.\Convert-SonySo505iPdcAudio.ps1 `
+    -InputAsf "C:\Videos\Phone Pictures 130.asf" `
+    -OutputAsf "C:\Videos\Phone Pictures 130 restored.asf"
+```
+
+Use `-Force` to replace an existing output file. The script still refuses to overwrite the source ASF.
+
+## Also keep the decoded WAV and parameter dump
+
+```powershell
+.\Convert-SonySo505iPdcAudio.ps1 `
+    -InputAsf "C:\Videos\Phone Pictures 130.asf" `
+    -OutputAsf "C:\Videos\Phone Pictures 130 restored.asf" `
+    -OutputWav "C:\Videos\Phone Pictures 130 decoded.wav" `
+    -ParameterJson "C:\Videos\Phone Pictures 130 parameters.json"
+```
+
+The historical wrapper name remains available:
+
+```powershell
+.\Decode-SonyPdcAudio.ps1 -InputAsf "C:\Videos\Phone Pictures 130.asf"
+```
+
+## Batch conversion
+
+```powershell
+Get-ChildItem "C:\Videos" -Filter "*.asf" | ForEach-Object {
+    $output = Join-Path $_.DirectoryName ($_.BaseName + " - decoded PDC.asf")
+    .\Convert-SonySo505iPdcAudio.ps1 `
+        -InputAsf $_.FullName `
+        -OutputAsf $output
+}
+```
+
+## Verification performed by default
+
+After creating the ASF, the tool verifies:
+
+1. the source and output video packet SHA-256 hashes are identical;
+2. the temporary decoded WAV and output PCM packet SHA-256 hashes are identical;
+3. the complete `SEMC PDC-AUDIO` descriptor entry is byte-for-byte identical.
+
+Use `-SkipVerification` only when speed matters more than the final integrity pass.
+
+## Direct Python use
 
 ```powershell
 py .\decode_sony_asf.py `
-    "C:\Path\Phone Pictures 130.asf" `
-    "C:\Path\Phone Pictures 130 decoded.wav"
+    "C:\Videos\Phone Pictures 130.asf" `
+    --asf "C:\Videos\Phone Pictures 130 restored.asf"
 ```
 
-Create a Windows-friendly MP4 as well (requires `ffmpeg.exe` on `PATH`):
+Optional outputs:
+
+```text
+--wav PATH          decoded PCM WAV
+--json PATH         decoded parameter dump
+--float-npy PATH    lossless float64 synthesis array
+--mp4 PATH          H.264/AAC listening copy
+--no-normalize      native decoder amplitude with 16-bit saturation
+--no-verify         skip ASF integrity verification
+--force             replace existing outputs
+--ffmpeg PATH       explicit ffmpeg.exe path
+```
+
+## End-to-end self-test
+
+Run against one original Sony clip:
 
 ```powershell
-py .\decode_sony_asf.py `
-    "C:\Path\Phone Pictures 130.asf" `
-    "C:\Path\Phone Pictures 130 decoded.wav" `
-    --mp4 "C:\Path\Phone Pictures 130 decoded.mp4"
+py .\asf_integration_test.py `
+    "C:\Videos\Phone Pictures 130.asf"
 ```
 
-PowerShell wrapper:
+The test creates temporary files and checks decoding, MJPEG packet identity, PCM packet identity, and exact attachment preservation.
 
-```powershell
-.\Decode-SonyPdcAudio.ps1 `
-    -InputAsf "C:\Path\Phone Pictures 130.asf" `
-    -OutputWav "C:\Path\Phone Pictures 130 decoded.wav" `
-    -OutputMp4 "C:\Path\Phone Pictures 130 decoded.mp4"
-```
+## Production files
 
-## Decode the already-extracted 24-byte records
+- `Convert-SonySo505iPdcAudio.ps1` — primary Windows PowerShell entry point
+- `Decode-SonyPdcAudio.ps1` — compatibility wrapper
+- `decode_sony_asf.py` — decode and container workflow
+- `preserve_semc_pdc_attachment.py` — exact ASF descriptor preservation
+- `extract_semc_pdc_audio.py` — Sony ASF binary-object extraction
+- `sony_unpack.py` — Sony 24-byte record unpacking and CRC validation
+- `pdc_decoder.py` — v3 audited PDC half-rate / PSI-CELP synthesis core
+- `arib_std27_tables.npz` — decoder tables
+- `asf_integration_test.py` — portable end-to-end test
 
-```powershell
-py .\sony_unpack.py `
-    "C:\Path\SEMC_PDC_AUDIO_130_frames160x24.bin" `
-    "C:\Path\decoded.wav" `
-    --json "C:\Path\decoded_parameters.json"
-```
+## Decoder status
 
-This lower-level command removes the sample's two known trailing marker records and writes the 6.320-second codec output. `decode_sony_asf.py` is preferred because it pads the WAV to the movie's nominal 6.400-second duration.
+The core is the frozen v3 decoder after the final equation-level audit. No waveform change was made for v3.3; this release adds the integrated ASF-preserving workflow and verification.
 
-## Files
+It is a strong error-free floating-point implementation, but not formally claimed to be sample-for-sample bit-exact with the historical fixed-point master codec. The remaining blockers are the unavailable official conformance vectors, exact fixed-point arithmetic details, and the first-frame reset state.
 
-- `decode_sony_asf.py` — end-to-end extraction, decoding, optional MP4 muxing
-- `extract_semc_pdc_audio.py` — extracts the ASF BYTE_ARRAY descriptor
-- `sony_unpack.py` — Sony record unpacking, CRC validation and parameter reconstruction
-- `pdc_decoder.py` — floating-point PDC half-rate / PSI-CELP synthesis decoder
-- `arib_std27_tables.npz` — numerical LSP, power, excitation and gain tables
-- `Decode-SonyPdcAudio.ps1` — PowerShell wrapper
-- `self_test.py` — checks extraction, record count, CRC and output duration against the supplied sample
-
-## Current limitations
-
-1. The optional PDC postfilter has not been implemented.
-2. Arithmetic is floating-point rather than the standard's fixed-point reference arithmetic.
-3. The code has been validated against five Sony clips, not a wider SO505i corpus.
-4. The five currently observed Sony trailer values are recognized empirically. Their exact purpose is still unknown.
-5. The decoder needs comparison against official PDC half-rate test vectors before it can be called bit-exact.
-
-FFmpeg's existing CELP-family decoders were useful as implementation references for LSP/LPC conversion, fractional interpolation and the `1/A(z)` synthesis-filter structure, but FFmpeg does not currently contain a PDC half-rate / PSI-CELP decoder or Sony `SEMC PDC-AUDIO` demuxer.
-
-## v3.2 final correctness pass and FFmpeg assessment
-
-Version 3.2 adds `final_core_audit.py`, `FINAL_CORE_AUDIT.md`, and `FFMPEG_INTEGRATION.md`. It intentionally makes no waveform change from v3/v3.1: no additional normative core error was found. The new audit independently round-trips all 790 active Sony records, cross-checks every CRC with a second polynomial implementation, validates all decoded LPC filters, and compares the synthesis recurrence with SciPy.
+See `FINAL_CORE_AUDIT.md` and `FFMPEG_INTEGRATION.md` for the detailed technical assessment.
