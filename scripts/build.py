@@ -33,11 +33,20 @@ def ensure_environment() -> Path:
 
 
 def clean_build_outputs() -> None:
-    build_directory = REPOSITORY_ROOT / "build"
-    if build_directory.is_dir():
-        shutil.rmtree(build_directory)
+    repository_root = REPOSITORY_ROOT.resolve()
+    generated_directories = (
+        repository_root / "build",
+        repository_root / "scripts" / "__pycache__",
+        repository_root / "src" / "pdc_audio" / "__pycache__",
+        repository_root / "src" / "pdc_audio.egg-info",
+        repository_root / "tests" / "__pycache__",
+    )
+    for directory in generated_directories:
+        if directory.is_dir():
+            directory.relative_to(repository_root)
+            shutil.rmtree(directory)
 
-    distribution_directory = REPOSITORY_ROOT / "dist"
+    distribution_directory = repository_root / "dist"
     if distribution_directory.is_dir():
         for wheel in distribution_directory.glob("pdc_audio-*.whl"):
             wheel.unlink()
