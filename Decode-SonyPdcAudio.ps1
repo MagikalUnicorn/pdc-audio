@@ -8,6 +8,12 @@ param(
 
     [string]$OutputMp4,
 
+    [string]$ParameterJson,
+
+    [string]$FloatNpy,
+
+    [switch]$NoNormalize,
+
     [string]$Python = "python"
 )
 
@@ -23,6 +29,18 @@ $arguments = @(
 
 if ($OutputMp4) {
     $arguments += @("--mp4", $OutputMp4)
+}
+
+if ($ParameterJson) {
+    $arguments += @("--json", $ParameterJson)
+}
+
+if ($FloatNpy) {
+    $arguments += @("--float-npy", $FloatNpy)
+}
+
+if ($NoNormalize) {
+    $arguments += "--no-normalize"
 }
 
 & $Python @arguments

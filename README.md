@@ -1,4 +1,7 @@
-# Experimental Sony SO505i PDC / PSI-CELP audio decoder
+# Sony SO505i PDC / PSI-CELP audio decoder — core-audit v3
+
+This package supersedes the experimental v2 decoder for core-decoder work. The frozen v2 package remains the listening baseline, but v3 corrects the RCR STD-27 adaptive-codebook duplicate-position priority and reconstructs the fixed/stochastic excitation tables on their exact Q15/Q7 grids. See [`CORE_AUDIT.md`](CORE_AUDIT.md) for the equation-level audit, tests and remaining blockers to a bit-exact claim.
+
 
 This is a first working floating-point decoder for the `SEMC PDC-AUDIO` byte array stored in Sony SO505i ASF movies.
 

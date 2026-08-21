@@ -187,21 +187,48 @@ def _dq_interp(dq: np.ndarray, lagi: int, j: int, frac: int) -> float:
 
 
 def acb_vector(dq: np.ndarray, lagi: int, lagf: int) -> np.ndarray:
+    """Decode one ACB vector exactly as RCR STD-27 Eq. 5.2.1.8.4.1.1-2/-3.
+
+    When two ``(n, j)`` combinations address the same output sample, the
+    standard mandates this priority: ``j=0``; ``j=lagi-1``; interior ``j``;
+    then ``j=-1``.  This is significant at pitch-period boundaries.
+    """
+    if not 16 <= lagi <= 96:
+        raise ValueError(f"ACB integer lag {lagi} is outside the coded range 16..96")
+    allowed_lagf = (0, 1, 2, 3) if lagi <= 45 else ((1, 3) if lagi <= 65 else (1,))
+    if lagf not in allowed_lagf:
+        raise ValueError(f"fractional lag code {lagf} is invalid for integer lag {lagi}")
+
+    def priority(j: int) -> int:
+        if j == 0:
+            return 0
+        if j == lagi - 1:
+            return 1
+        if 1 <= j <= lagi - 2:
+            return 2
+        if j == -1:
+            return 3
+        raise AssertionError(f"unexpected ACB interpolation index j={j}")
+
     out = np.zeros(NSUB, dtype=np.float64)
-    assigned = np.zeros(NSUB, dtype=bool)
-    max_n = NSUB // max(1, lagi) + 2
-    for n in range(max_n + 1):
-        frac = (lagf + n * (lagf - 1)) % 4
-        offset = math.floor((lagf + n * (lagf - 1)) / 4)
+    selected_priority = np.full(NSUB, 99, dtype=np.int8)
+
+    for n in range(NSUB // lagi + 1):
+        phase_term = lagf + n * (lagf - 1)
+        frac = phase_term % 4
+        offset = phase_term // 4
         for j in range(-1, lagi):
             pos = n * lagi + j - offset
-            if 0 <= pos < NSUB and not assigned[pos]:
+            if not 0 <= pos < NSUB:
+                continue
+            candidate_priority = priority(j)
+            if candidate_priority < selected_priority[pos]:
                 out[pos] = _dq_interp(dq, lagi, j, frac)
-                assigned[pos] = True
-    # A safety fallback for a boundary sample if the literal formula left a gap.
-    for pos in np.flatnonzero(~assigned):
-        src = pos - lagi
-        out[pos] = out[src] if src >= 0 else _dq_get(dq, len(dq) + src)
+                selected_priority[pos] = candidate_priority
+
+    missing = np.flatnonzero(selected_priority == 99)
+    if len(missing):
+        raise RuntimeError(f"RCR STD-27 ACB equations did not assign output samples {missing.tolist()}")
     return out
 
 
@@ -214,21 +241,40 @@ def fcb_vector(cfcb: np.ndarray, index: int, sign_bit: int) -> np.ndarray:
 
 
 def psi_vector(book: np.ndarray, index: int, lagi: int, lagf: int) -> np.ndarray:
+    """Apply the PSI repetition in RCR STD-27 Eq. 5.2.1.8.5.1-1."""
+    if not 0 <= index < book.shape[0]:
+        raise ValueError(f"SCB index {index} is outside the codebook")
     if lagi == 0:
+        # With PSI disabled, phase 1 is the unshifted stored stochastic vector.
         return np.array(book[index, 1, :], dtype=np.float64)
+    if not 16 <= lagi <= 96:
+        raise ValueError(f"PSI integer lag {lagi} is outside 16..96")
+
     out = np.zeros(NSUB, dtype=np.float64)
-    best_j = np.full(NSUB, 10_000, dtype=np.int32)
-    max_n = NSUB // max(1, lagi) + 2
-    for n in range(max_n + 1):
-        frac = (1 + n * (lagf - 1)) % 4
-        offset = math.floor((1 + n * (lagf - 1)) / 4)
+    selected_j = np.full(NSUB, 127, dtype=np.int16)
+    for n in range(NSUB // lagi + 1):
+        phase_term = 1 + n * (lagf - 1)
+        frac = phase_term % 4
+        offset = phase_term // 4
         for j in range(0, lagi + 1):
             pos = n * lagi + j - offset
-            if 0 <= pos < NSUB and j < best_j[pos]:
-                # The stored table has 80 samples; j=80 can occur only for FCB and is outside it.
-                src = min(j, 79)
-                out[pos] = book[index, frac, src]
-                best_j[pos] = j
+            if not 0 <= pos < NSUB:
+                continue
+            if j >= book.shape[2]:
+                raise RuntimeError(f"PSI requested unavailable stored-vector sample j={j}")
+            # The standard gives the smaller j precedence for duplicate positions.
+            if j < selected_j[pos]:
+                value = float(book[index, frac, j])
+                if not math.isfinite(value):
+                    raise RuntimeError(
+                        f"SCB table has no value for index={index}, phase={frac}, j={j}"
+                    )
+                out[pos] = value
+                selected_j[pos] = j
+
+    missing = np.flatnonzero(selected_j == 127)
+    if len(missing):
+        raise RuntimeError(f"RCR STD-27 PSI equation did not assign output samples {missing.tolist()}")
     return out
 
 

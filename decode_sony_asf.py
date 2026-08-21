@@ -13,11 +13,23 @@ from pdc_decoder import PDCDecoder, write_wav
 from sony_unpack import frame_to_dict, unpack_record
 
 
-def write_wav_with_duration(path: Path, samples: np.ndarray, duration_seconds: float) -> None:
+def pad_to_duration(samples: np.ndarray, duration_seconds: float) -> np.ndarray:
     target_samples = max(len(samples), round(duration_seconds * 8000))
     padded = np.zeros(target_samples, dtype=np.float64)
     padded[:len(samples)] = samples
-    write_wav(path, padded, sample_rate=8000, normalize=True)
+    return padded
+
+
+def write_wav_with_duration(
+    path: Path,
+    samples: np.ndarray,
+    duration_seconds: float,
+    *,
+    normalize: bool,
+) -> np.ndarray:
+    padded = pad_to_duration(samples, duration_seconds)
+    write_wav(path, padded, sample_rate=8000, normalize=normalize)
+    return padded
 
 
 def decode_asf(
@@ -25,6 +37,9 @@ def decode_asf(
     output_wav: Path,
     tables: Path,
     parameter_json: Path | None = None,
+    *,
+    normalize: bool = True,
+    float_npy: Path | None = None,
 ) -> tuple[int, int, float]:
     obj = extract_semc_pdc_audio(input_asf)
     if obj.frame_size != 24:
@@ -69,7 +84,14 @@ def decode_asf(
     decoder = PDCDecoder(tables)
     samples = decoder.decode(frames)
     nominal_duration = len(records) * 0.040
-    write_wav_with_duration(output_wav, samples, nominal_duration)
+    padded = write_wav_with_duration(
+        output_wav,
+        samples,
+        nominal_duration,
+        normalize=normalize,
+    )
+    if float_npy:
+        np.save(float_npy, padded)
 
     if parameter_json:
         parameter_json.write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -113,9 +135,26 @@ def main() -> None:
     )
     parser.add_argument("--json", type=Path, help="optional decoded parameter dump")
     parser.add_argument("--mp4", type=Path, help="optional MP4 with decoded audio muxed to the video")
+    parser.add_argument(
+        "--no-normalize",
+        action="store_true",
+        help="write the decoder's native amplitude with 16-bit saturation instead of peak normalization",
+    )
+    parser.add_argument(
+        "--float-npy",
+        type=Path,
+        help="optional lossless float64 synthesis output, padded to the movie duration",
+    )
     args = parser.parse_args()
 
-    active, nominal, duration = decode_asf(args.input, args.output_wav, args.tables, args.json)
+    active, nominal, duration = decode_asf(
+        args.input,
+        args.output_wav,
+        args.tables,
+        args.json,
+        normalize=not args.no_normalize,
+        float_npy=args.float_npy,
+    )
     print(f"CRC-valid speech records: {active}/{nominal}")
     print(f"Output duration: {duration:.3f} s (trailing invalid records padded with silence)")
     print(f"Wrote: {args.output_wav}")
