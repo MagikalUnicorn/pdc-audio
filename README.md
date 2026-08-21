@@ -146,3 +146,80 @@ See [the core audit](docs/CORE_AUDIT.md),
 [v3.3 validation](docs/VALIDATION.md), and
 [the FFmpeg integration assessment](docs/FFMPEG_INTEGRATION.md) for technical
 detail and known limitations.
+
+## 日本語
+
+### 概要
+
+PDC-Audio は、対応する NTT ドコモ MOVA の動画ファイルに埋め込まれた
+`SEMC PDC-AUDIO` オブジェクトを取り出し、音声を復号するためのツールです。
+復号後の音声は、モノラル、8 kHz、符号付き 16 ビット PCM です。
+
+元の MJPEG 映像、復号した PCM 音声、および独自形式の記述子を含む、再生可能な
+ASF ファイルも作成できます。元の録画ファイルを直接変更することはありません。
+
+コマンドラインは特定の機種名やファイル名に依存しません。現在対応しているのは、
+検証済みの `SEMC PDC-AUDIO` 記述子、16 バイトのオブジェクトヘッダー、および
+24 バイトのレコード構造を持つ MOVA の ASF ファイルです。付属のテスト用データは
+Sony Ericsson SO505i で録画されたものです。他社製 MOVA 端末や別のコンテナ形式では、
+追加の解析処理が必要になる場合があります。
+
+### 必要環境とビルド
+
+Python 3.11 以降と NumPy が必要です。WAV への復号だけであれば FFmpeg は不要です。
+ASF または MP4 を出力する場合には FFmpeg が必要です。
+
+MSYS2 MinGW64 では、最初に依存パッケージをインストールします。
+
+```console
+pacman -S --needed mingw-w64-x86_64-python-numpy \
+    mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-setuptools \
+    mingw-w64-x86_64-python-build mingw-w64-x86_64-ffmpeg
+```
+
+リポジトリのルートで次のコマンドを実行すると、`.venv` の作成、編集可能モードでの
+インストール、および `dist` ディレクトリへの wheel の作成が行われます。
+
+```console
+python scripts/build.py
+```
+
+### 実行方法
+
+外部の出力ディレクトリに、検証済みの ASF ファイルを作成します。
+
+```console
+python scripts/convert_mova_pdc_audio.py \
+    ../pdc-audio-media/samples/sample.asf
+```
+
+出力先を個別に指定する場合は、次のように実行します。
+
+```console
+python scripts/convert_mova_pdc_audio.py \
+    ../pdc-audio-media/samples/sample.asf \
+    --asf ../pdc-audio-media/outputs/decoded.asf \
+    --wav ../pdc-audio-media/outputs/decoded.wav \
+    --json ../pdc-audio-media/outputs/parameters.json
+```
+
+インストール後は `pdc-audio` コマンドでも同じ機能を利用できます。
+
+### テスト
+
+ユニットテストと、外部ディレクトリにあるすべての ASF サンプルに対する結合テストを
+実行します。
+
+```console
+python scripts/test.py
+```
+
+録画ファイルを使用しないテストだけを実行する場合は、
+`python scripts/test.py --unit-only` を使用してください。
+
+### 規格文書と録画ファイル
+
+実装は、上記の「Standards and references」に記載した RCR STD-27 L、ARIB TR-T1、
+および PSI-CELP 論文を参照しています。これらの規格文書、個人の録画ファイル、画像、
+抽出データ、および生成した音声・動画は Git に追加せず、隣接する
+`../pdc-audio-media` ディレクトリに保存してください。
