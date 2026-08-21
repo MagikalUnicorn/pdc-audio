@@ -86,6 +86,45 @@ python scripts/build.py
 The helper creates `.venv`, installs the project in editable mode, and builds a
 wheel under `dist`.
 
+### Running from Windows PowerShell
+
+From the repository root in PowerShell, use the MSYS2 Python executable
+explicitly. This avoids the Windows Microsoft Store `python` alias when MSYS2
+is not on PowerShell's `PATH`. These commands invoke the portable Python
+helpers; no PowerShell scripts are required.
+
+Build the project:
+
+```powershell
+& "C:\msys64\mingw64\bin\python.exe" .\scripts\build.py
+```
+
+List the available external ASF recordings:
+
+```powershell
+Get-ChildItem ..\pdc-audio-media\samples\*.asf
+```
+
+Decode one recording to WAV, replacing `your-recording.asf` with its filename:
+
+```powershell
+& "C:\msys64\mingw64\bin\python.exe" .\scripts\convert_mova_pdc_audio.py `
+    "..\pdc-audio-media\samples\your-recording.asf" `
+    --wav "..\pdc-audio-media\outputs\decoded.wav"
+```
+
+To create a verified ASF with an automatically generated timestamped filename,
+omit the output options:
+
+```powershell
+& "C:\msys64\mingw64\bin\python.exe" .\scripts\convert_mova_pdc_audio.py `
+    "..\pdc-audio-media\samples\your-recording.asf"
+```
+
+Automatic ASF output is written under `..\pdc-audio-media\outputs`. Quote paths
+that contain spaces. Existing output files are not replaced unless `--force`
+is supplied deliberately.
+
 ## Run
 
 Create a verified ASF in the external output directory:
@@ -183,6 +222,43 @@ pacman -S --needed mingw-w64-x86_64-python-numpy \
 ```console
 python scripts/build.py
 ```
+
+### Windows PowerShell からの実行
+
+PowerShell では `python` が Microsoft Store のエイリアスとして解決される場合が
+あるため、リポジトリのルートから MSYS2 の Python を明示的に指定してください。
+以下のコマンドは Python ヘルパーを実行するもので、PowerShell スクリプトは使用しません。
+
+プロジェクトをビルドします。
+
+```powershell
+& "C:\msys64\mingw64\bin\python.exe" .\scripts\build.py
+```
+
+外部ディレクトリにある ASF 録画ファイルを確認します。
+
+```powershell
+Get-ChildItem ..\pdc-audio-media\samples\*.asf
+```
+
+`your-recording.asf` を実際のファイル名に置き換え、WAV に復号します。
+
+```powershell
+& "C:\msys64\mingw64\bin\python.exe" .\scripts\convert_mova_pdc_audio.py `
+    "..\pdc-audio-media\samples\your-recording.asf" `
+    --wav "..\pdc-audio-media\outputs\decoded.wav"
+```
+
+出力オプションを省略すると、タイムスタンプ付きのファイル名で検証済み ASF を作成します。
+
+```powershell
+& "C:\msys64\mingw64\bin\python.exe" .\scripts\convert_mova_pdc_audio.py `
+    "..\pdc-audio-media\samples\your-recording.asf"
+```
+
+自動生成した ASF は `..\pdc-audio-media\outputs` に保存されます。空白を含むパスは
+引用符で囲んでください。既存の出力ファイルは、`--force` を明示的に指定しない限り
+上書きされません。
 
 ### 実行方法
 
