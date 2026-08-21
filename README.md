@@ -182,6 +182,13 @@ See [the core audit](docs/CORE_AUDIT.md),
 [the FFmpeg integration assessment](docs/FFMPEG_INTEGRATION.md) for technical
 detail and known limitations.
 
+## License
+
+PDC-Audio source code and repository documentation are available under the
+[MIT License](LICENSE). External standards and papers are not included in the
+repository and remain subject to their respective copyright and distribution
+terms.
+
 ## 日本語
 
 ### 概要
@@ -295,3 +302,9 @@ python scripts/test.py
 および PSI-CELP 論文を参照しています。これらの規格文書、個人の録画ファイル、画像、
 抽出データ、および生成した音声・動画は Git に追加せず、隣接する
 `../pdc-audio-media` ディレクトリに保存してください。
+
+### ライセンス
+
+PDC-Audio のソースコードおよびリポジトリ内の文書は、
+[MIT License](LICENSE) の下で公開されています。外部の規格文書および論文は
+リポジトリに含まれず、それぞれの著作権および配布条件が適用されます。
