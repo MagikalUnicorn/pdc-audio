@@ -83,13 +83,15 @@ wheel under `dist`.
 Create a verified ASF in the external output directory:
 
 ```console
-python scripts/run.py ../pdc-audio-media/samples/sample.asf
+python scripts/convert_sony_so505i_pdc_audio.py \
+    ../pdc-audio-media/samples/sample.asf
 ```
 
 Choose outputs explicitly when required:
 
 ```console
-python scripts/run.py ../pdc-audio-media/samples/sample.asf \
+python scripts/convert_sony_so505i_pdc_audio.py \
+    ../pdc-audio-media/samples/sample.asf \
     --asf ../pdc-audio-media/outputs/decoded.asf \
     --wav ../pdc-audio-media/outputs/decoded.wav \
     --json ../pdc-audio-media/outputs/parameters.json
@@ -98,6 +100,9 @@ python scripts/run.py ../pdc-audio-media/samples/sample.asf \
 Useful options include `--float-npy`, `--mp4`, `--no-normalize`, `--force`,
 and `--ffmpeg PATH`. ASF output verifies the copied video packets, decoded PCM,
 and preserved binary descriptor by default; `--no-verify` disables that pass.
+
+`scripts/decode_sony_pdc_audio.py` is retained as the Python compatibility
+replacement for the older decode wrapper and accepts the same arguments.
 
 The installed `pdc-audio` command provides the same decoder interface. Lower
 level commands are also installed:

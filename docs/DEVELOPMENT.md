@@ -61,16 +61,20 @@ the `SEMC PDC-AUDIO` object. It never alters the source recording.
 Decode one recording and create a verified ASF:
 
 ```console
-python scripts/run.py ../pdc-audio-media/samples/sample.asf
+python scripts/convert_sony_so505i_pdc_audio.py \
+    ../pdc-audio-media/samples/sample.asf
 ```
 
 With no explicit output, the helper writes a generically named ASF under
 `pdc-audio-media/outputs`. Outputs can instead be selected explicitly:
 
 ```console
-python scripts/run.py ../pdc-audio-media/samples/sample.asf \
+python scripts/convert_sony_so505i_pdc_audio.py \
+    ../pdc-audio-media/samples/sample.asf \
     --asf ../pdc-audio-media/outputs/decoded.asf \
     --wav ../pdc-audio-media/outputs/decoded.wav
 ```
 
 The input is never overwritten. Use `--help` with any helper to see all options.
+The compatibility entry point `scripts/decode_sony_pdc_audio.py` accepts the
+same interface.
