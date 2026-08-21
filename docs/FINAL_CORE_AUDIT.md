@@ -32,9 +32,9 @@ The optional postfilter remains excluded.
 
 Run both suites:
 
-```powershell
-py .\core_self_test.py
-py .\final_core_audit.py
+```console
+python core_self_test.py
+python final_core_audit.py
 ```
 
 ## Passed results

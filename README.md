@@ -1,12 +1,12 @@
 # PDC-Audio
 
 PDC-Audio recovers and decodes the `SEMC PDC-AUDIO` object embedded in video
-recordings made by Sony Japanese MOVA handsets, including the SO505i. The
-decoded output is mono, 8 kHz, signed 16-bit PCM.
+recordings made by Sony Japanese MOVA handsets, including the SO505i. Decoded
+audio is mono, 8 kHz, signed 16-bit PCM.
 
 The utility can also create a new playable ASF containing the original MJPEG
-video packets, decoded PCM audio, and the original proprietary audio descriptor.
-The source recording is never modified in place.
+video packets, decoded PCM audio, and the original proprietary descriptor. It
+never modifies the source recording in place.
 
 ## Status
 
@@ -19,91 +19,75 @@ historical fixed-point reference implementation.
 
 ```text
 src/pdc_audio/   importable decoder and ASF tooling
-scripts/         PowerShell conversion entry points
-tests/           media-independent core tests and optional ASF integration test
-docs/            historical audits, validation, and integration notes
+scripts/         portable Python build, test, and run helpers
+tests/           media-independent core tests and ASF integration test
+docs/            development instructions and historical technical audits
 ```
 
-The three supplied standards/reference PDFs are deliberately not kept in Git.
-They live in the sibling `pdc-audio-media/standards` directory, alongside any
-private source recordings or generated media used for local validation.
+Standards, private recordings, and generated media are deliberately kept
+outside Git in the sibling `pdc-audio-media` directory.
 
-## Installation
+## Requirements and build
 
 PDC-Audio requires Python 3.11 or later and NumPy. FFmpeg is needed only for ASF
 or MP4 output; decoding to WAV does not require it.
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e .
-```
+In MSYS2 MinGW64, install the dependencies once:
 
-On MSYS2, activate `.venv/bin/activate` instead. An editable install provides
-the `pdc-audio` command and keeps the bundled audited codebook tables available.
-
-For the MinGW64 environment used by this repository, the equivalent setup is:
-
-```bash
+```console
 pacman -S --needed mingw-w64-x86_64-python-numpy \
     mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-setuptools \
     mingw-w64-x86_64-python-build mingw-w64-x86_64-ffmpeg
-python -m venv --system-site-packages .venv
-source .venv/bin/activate
-python -m pip install --no-build-isolation --no-deps -e .
 ```
 
-## Use
+Then build the project from the repository root:
 
-The simplest Windows workflow creates a decoded ASF beside the source file:
+```console
+python scripts/build.py
+```
 
-```powershell
-.\scripts\Convert-SonySo505iPdcAudio.ps1 `
-    -InputAsf "C:\Videos\Phone Pictures 130.asf"
+The helper creates `.venv`, installs the project in editable mode, and builds a
+wheel under `dist`.
+
+## Run
+
+Create a verified ASF in the external output directory:
+
+```console
+python scripts/run.py ../pdc-audio-media/samples/sample.asf
 ```
 
 Choose outputs explicitly when required:
 
-```powershell
-pdc-audio "C:\Videos\Phone Pictures 130.asf" `
-    --asf "C:\Videos\Phone Pictures 130 restored.asf" `
-    --wav "C:\Videos\Phone Pictures 130 decoded.wav" `
-    --json "C:\Videos\Phone Pictures 130 parameters.json"
-```
-
-The module form works without relying on the console-script name:
-
-```powershell
-python -m pdc_audio "C:\Videos\Phone Pictures 130.asf" `
-    --wav "C:\Videos\Phone Pictures 130 decoded.wav"
+```console
+python scripts/run.py ../pdc-audio-media/samples/sample.asf \
+    --asf ../pdc-audio-media/outputs/decoded.asf \
+    --wav ../pdc-audio-media/outputs/decoded.wav \
+    --json ../pdc-audio-media/outputs/parameters.json
 ```
 
 Useful options include `--float-npy`, `--mp4`, `--no-normalize`, `--force`,
 and `--ffmpeg PATH`. ASF output verifies the copied video packets, decoded PCM,
 and preserved binary descriptor by default; `--no-verify` disables that pass.
 
-Lower-level installed commands are also available:
+The installed `pdc-audio` command provides the same decoder interface. Lower
+level commands are also installed:
 
 - `pdc-audio-extract` extracts the proprietary object from an ASF.
 - `pdc-audio-decode-records` decodes an extracted sequence of 24-byte records.
 - `pdc-audio-preserve` copies the descriptor into an already-remuxed ASF.
 
-## Test and build
+## Test
 
-The core suite does not require private handset recordings:
+Run the core suite and every external ASF sample:
 
-```powershell
-python -m unittest discover -s tests -p "test_*.py"
-python -m pip wheel . --no-deps --wheel-dir dist
+```console
+python scripts/test.py
 ```
 
-Run the end-to-end ASF test when an original SO505i recording and FFmpeg are
-available:
-
-```powershell
-python .\tests\asf_integration.py `
-    "C:\Videos\Phone Pictures 130.asf"
-```
+Run only media-independent tests with `python scripts/test.py --unit-only`.
+See [the development instructions](docs/DEVELOPMENT.md) for all helper options
+and the repository’s private-media rules.
 
 ## Imported development history
 

@@ -10,13 +10,25 @@ build/
 dist/
 
 # Decoder outputs and local media
+*.3gp
+*.aac
+*.avi
 *.asf
 *.bin
+*.heic
+*.jpeg
+*.jpg
 *.json
+*.m4a
+*.m4v
+*.mkv
+*.mov
 *.mp4
 *.npy
 *.pdf
+*.png
 *.wav
+*.webp
 *.zip
 *.log
 

@@ -56,8 +56,8 @@ This removes decimal-publication rounding from the excitation vectors. Its numer
 
 Run:
 
-```powershell
-py .\core_self_test.py
+```console
+python core_self_test.py
 ```
 
 The test covers:
@@ -86,12 +86,9 @@ Full per-clip figures are in `core-audit-statistics.json` in the listening-outpu
 
 Peak normalisation is not part of the speech decoder. The command-line tool retains normalised WAV output by default for convenient listening, but now supports:
 
-```powershell
-py .\decode_sony_asf.py `
-    "Phone Pictures 130.asf" `
-    "Phone Pictures 130 native.wav" `
-    --no-normalize `
-    --float-npy "Phone Pictures 130 synthesis.npy"
+```console
+python decode_sony_asf.py sample.asf native.wav --no-normalize \
+    --float-npy synthesis.npy
 ```
 
 - `--no-normalize` writes the decoder's native amplitude with ordinary signed-16-bit saturation.

@@ -7,7 +7,7 @@ in Japanese MOVA handset video recordings.
 ## Repository layout
 
 - Keep importable Python code in `src/pdc_audio`.
-- Keep automated tests in `tests` and command wrappers in `scripts`.
+- Keep automated tests in `tests` and portable Python helpers in `scripts`.
 - Keep project documentation in `docs`.
 - Keep standards, source recordings, extracted payloads, decoded audio, and
   other large or redistribution-sensitive media outside this repository in the
@@ -29,7 +29,9 @@ in Japanese MOVA handset video recordings.
 - Support Python 3.11 or later.
 - Use a repository-local virtual environment (`.venv`) for development
   dependencies; do not commit it.
-- Install the project in editable mode before testing: `python -m pip install -e .`.
+- Use `python scripts/build.py` for the editable install and wheel build.
+- Use `python scripts/test.py` for routine unit and available media integration
+  tests.
 - Treat a successful package build, import check, and automated test run as the
   normal build verification for this Python utility.
 - FFmpeg and FFprobe are optional runtime tools used only for container
